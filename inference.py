@@ -1,30 +1,28 @@
 import argparse
 import os
 import pandas as pd
-from diac_btc.models import Wav2Vec2DiacritizationModel
+from diac_btc.models import Wav2Vec2DiacritizationModel, NemoDiacritizationModel
 from tqdm import tqdm
 import json
+import time
+from pyarabic import araby
 
 
 def main(args):
 
-    model = Wav2Vec2DiacritizationModel(args.model_path)
+    if args.model_type == "wav2vec2":
+        model = Wav2Vec2DiacritizationModel(args.model_path)
+    elif args.model_type == "nemo":
+        model = NemoDiacritizationModel(args.model_path)
+    else:
+        raise ValueError("Unsupported model type. Only wav2vec2 and nemo are supported.")
 
     _, ext = os.path.splitext(args.text)
     ext = ext.lower()
-    if ext == ".tsv":
-        # expect a tsv file with columns: audio_path, text
-        df = pd.read_csv(args.text, sep="\t")
-        gt_path = os.path.join(args.output_path, "gt.txt")
-        pred_path = os.path.join(args.output_path, "pred.txt")
-        with open(pred_path, "w") as pred_f, open(gt_path, "w") as gt_f:
-            for index, row in tqdm(df.iterrows(), total=df.shape[0]):
-                audio_path = row["audio_path"]
-                text = row["text"]
-                diacritized_text = model.diacritize(text, audio_path, args.constrained, args.method)
-                pred_f.write(f"{diacritized_text}\n")
-                gt_f.write(f"{text}\n")
 
+    if ext == ".tsv":
+        df = pd.read_csv(args.text, sep="\t")
+        
     elif ext == ".json":
         with open(args.text, "r") as infile:
             content = infile.read().strip()
@@ -41,24 +39,33 @@ def main(args):
                         line = line.strip()
                         if line:
                             data.append(json.loads(line))
-
-        # Assume gt.txt contains 1 raw text per line in same order
-        gt_path = os.path.join(args.output_path, "gt.txt")
-        pred_path = os.path.join(args.output_path, "pred.txt")  
-        with open(pred_path, "w") as pred_f, open(gt_path, "w") as gt_f:
-            for idx, entry in enumerate(tqdm(data, total=len(data))):
-                audio_path = entry.get("audio_filepath")
-                text = entry.get("text")
-                diacritized_text = model.diacritize(text, audio_path, args.constrained, args.method)
-                pred_f.write(f"{diacritized_text}\n")
-                gt_f.write(f"{text}\n")
-
+        df = pd.DataFrame(data)
+        
     else:
         raise ValueError("Unsupported input file format. Only .tsv and .json are supported.")
 
+    # Assume gt.txt contains 1 raw text per line in same order
+    gt_path = os.path.join(args.output_path, "gt.txt")
+    pred_path = os.path.join(args.output_path, "pred.txt")  
+    rtf_times = []
+    with open(pred_path, "w") as pred_f, open(gt_path, "w") as gt_f:
+        for idx, entry in tqdm(df.iterrows(), total=df.shape[0]):
+            audio_path = entry["audio_filepath"]
+            text = entry["text"]
+            text_no_diac = araby.strip_diacritics(text)
+            diacritized_text, rtf = model.diacritize(text_no_diac, audio_path, args.constrained, args.method)
+            if len(diacritized_text) == 0:
+                print(f"WARNING: Empty diacritized text for {audio_path}")
+                diacritized_text = text_no_diac
+            rtf_times.append(rtf)
+            pred_f.write(f"{diacritized_text}\n")
+            gt_f.write(f"{text}\n")
+
+    print(f"Average rtfx time: {1/(sum(rtf_times) / len(rtf_times))} seconds")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model_type", type=str, choices=["wav2vec2", "nemo"], default="wav2vec2")
     parser.add_argument("--model_path", type=str, default="jonatasgrosman/wav2vec2-large-xlsr-53-arabic")
     parser.add_argument("--text", type=str, default="data/clartts/raw/test/metadata.json")
     parser.add_argument("--constrained", type=bool, default=True)

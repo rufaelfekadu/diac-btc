@@ -2,7 +2,7 @@ name: "Speech_To_Text_Finetuning"
 
 # use `init_from_nemo_model` or `init_from_pretrained_model` to initialize the model
 # We do not currently support `init_from_ptl_ckpt` to create a single script for all types of models.
-init_from_nemo_model: /home/rufael/Projects/diac-btc/outputs/ckpts/stt_ar_fastconformer_ctc_large_pcd.v1.0.nemo
+init_from_nemo_model: /home/rufael/Projects/diac-btc/outputs/nemo/ckpts/stt_ar_fastconformer_ctc_large_pcd.v1.0.nemo
 
 model:
   sample_rate: 16000
@@ -45,12 +45,27 @@ model:
   
   char_labels: # use for char based models
     update_labels: true
-    labels: \[]
+    labels: \[' ', '،', 'ء', 'آ', 'أ', 'ؤ', 'إ', 'ئ', 'ا', 'ب', 'ة', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ـ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ى', 'ي', 'ً', 'ٌ', 'ٍ', 'َ', 'ُ', 'ِ', 'ّ', 'ْ', '٠', '٨', 'ٰ', 'ڤ', 'ی', '\ue001', '\ue002', '\ue003', '\ue004', '\ue005', '\ue006']
 
   # tokenizer: # use for spe/bpe based tokenizer models
   #   update_tokenizer: false
   #   dir: null  # path to directory which contains either tokenizer.model (bpe) or vocab.txt (for wpe)
   #   type: bpe  # Can be either bpe (SentencePiece tokenizer) or wpe (WordPiece tokenizer)
+
+  preprocessor:
+    _target_: nemo.collections.asr.modules.AudioToMelSpectrogramPreprocessor
+    sample_rate: ${model.sample_rate}
+    normalize: "per_feature"
+    window_size: 0.025
+    window_stride: 0.01
+    window: "hann"
+    features: 80
+    n_fft: 512
+    log: true
+    frame_splicing: 1
+    dither: 0.00001
+    pad_to: 0
+    pad_value: 0.0
 
   spec_augment:
     _target_: nemo.collections.asr.modules.SpectrogramAugmentation

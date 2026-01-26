@@ -95,6 +95,8 @@ class DiacritizationModel(ABC):
         best_path = k2.shortest_path(lattice, use_double_scores=False)
         aux = k2.get_aux_labels(best_path)[0]
         hyp_ids = [x for x in aux if x >= 0]
+        if len(hyp_ids) == 0:
+            breakpoint()
 
 
 

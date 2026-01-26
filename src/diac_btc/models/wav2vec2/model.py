@@ -3,6 +3,7 @@ from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC, AutoModelForCTC
 import torch
 import numpy as np
 import librosa
+import time
 
 
 
@@ -99,7 +100,8 @@ class Wav2Vec2DiacritizationModel(DiacritizationModel):
             audio = audio[:, 0]
 
         audio = np.array(audio, dtype=np.float32)
-        
+        audio_duration = len(audio) / sr
+        start_time = time.time()
         # get logits
         log_probs = self.get_logits(audio)
         pattern = form_wildcard_pattern(text)
@@ -111,9 +113,11 @@ class Wav2Vec2DiacritizationModel(DiacritizationModel):
             decoded = self.decode_ctc(log_probs)
         else:
             raise ValueError(f"Invalid method: {method}")
+        end_time = time.time()
 
+        rtf = (end_time - start_time) / audio_duration
         # replace word delimiter with space
         if self.word_delimiter_token:
             decoded = decoded.replace(self.word_delimiter_token, " ")
 
-        return decoded
+        return decoded, rtf
