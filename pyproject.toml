@@ -40,7 +40,7 @@ docs = [
     "furo"
 ]
 nemo = [
-    "nemo-toolkit[all]>=1.23.0"
+    "nemo-toolkit[asr]>=1.23.0"
 ]
 
 
