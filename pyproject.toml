@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diac-btc"
+version = "0.1.0"
+description = "Automatic Arabic Diacritization using CTC models"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.9.1",
+    "torchaudio>=2.9.1",
+    "transformers>=4.57.6",
+    "soundfile==0.31.1",
+    "librosa>=0.11.0",
+    "pyarabic>=0.6.10",
+    "datasets>=2.0.0",
+    "jiwer>=3.0.0",
+    "omegaconf>=2.3.0",
+    "lightning>=2.0.0",
+    "hydra-core>=1.3.0",
+    "tqdm>=4.65.0",
+    "numpy>=1.24.0",
+    "nemo-toolkit[all]>=1.23.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
