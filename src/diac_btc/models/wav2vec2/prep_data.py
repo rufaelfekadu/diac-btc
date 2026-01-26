@@ -12,14 +12,12 @@ from functools import partial
 import json
 from tqdm import tqdm
 
-from diac_btc.text import preprocess_text
-
 # wav2vec_processor = AutoProcessor.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-arabic")
 # wav2vec_model = AutoModelForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-arabic")
 
 clartts_configs = {
     "hf_dataset": "MBZUAI/clartts",
-    "output_dir": "data/clartts/raw",
+    "output_dir": "/home/rufael/Projects/diac-btc/data/clartts/raw",
     "splits": ["train", "test"],
     "num_proc": 16,
 }
@@ -31,13 +29,13 @@ arvoice_configs = {
         "/l/ArVoice/v1/part-1/metadata_{}.csv",
         "/l/ArVoice/v1/part-2/metadata_{}.csv",
         ],
-    "output_dir": "data/arvoice/raw",
+    "output_dir": "/home/rufael/Projects/diac-btc/data/arvoice/raw",
     "num_proc": 16,
     "splits": ["train", "test"],
 }
 nadi_configs = {
     "hf_dataset": "MBZUAI/NADI-2025-Sub-task-3-test",
-    "output_dir": "data/nadi/raw",
+    "output_dir": "/home/rufael/Projects/diac-btc/data/nadi/raw",
     "splits": ["test"],
     "num_proc": 16,
 }
@@ -61,7 +59,7 @@ def process_clartts(item, split):
 
     # save audio to disk
     audio_path = item['file']
-    audio_path = os.path.join(clartts_configs['output_dir'], split, audio_path)
+    audio_path = os.path.join(clartts_configs['splits'][split]['output_dir'], audio_path)
     os.makedirs(os.path.dirname(audio_path), exist_ok=True)
 
     item['audio_filepath'] = audio_path
@@ -128,20 +126,20 @@ def process_nadi(item, split):
 def main():
 
     #CLArTTS
-    for split in clartts_configs['splits']:
-        clartts = load_dataset("MBZUAI/clartts", split=split)
-        process_func = partial(process_clartts, split=split)
-        clartts_dataset_processed = clartts.map(process_func, num_proc=16)
+    # for split in clartts_configs['splits']:
+    #     clartts = load_dataset("MBZUAI/clartts", split=split)
+    #     process_func = partial(process_clartts, split=split)
+    #     clartts_dataset_processed = clartts.map(process_func, num_proc=16)
 
-        # dump the metadata to json
-        data_itr = iter(clartts_dataset_processed)
-        with open(os.path.join(clartts_configs['output_dir'], split, "metadata.json"), "w") as f:
-            for item in tqdm(data_itr):
-                del item['audio']
-                json.dump(item, f, ensure_ascii=False)
-                f.write("\n")
+    #     # dump the metadata to json
+    #     data_itr = iter(clartts_dataset_processed)
+    #     with open(os.path.join(clartts_configs['output_dir'], split, "metadata.json"), "w") as f:
+    #         for item in tqdm(data_itr):
+    #             del item['audio']
+    #             json.dump(item, f, ensure_ascii=False, indent=4)
+    #             f.write("\n")
 
-    # # ArVoice
+    # ArVoice
     # for split in arvoice_configs['splits']:
     #     total_arvoice = []
     #     prepocess_arvoice_fn = partial(process_arvoice, split=split)
@@ -151,34 +149,35 @@ def main():
     #         arvoice = arvoice.map(prepocess_arvoice_fn, num_proc=arvoice_configs['num_proc'])
     #         total_arvoice.append(arvoice)
     #     total_arvoice = concatenate_datasets(total_arvoice)
-
+    #     # rename the transcription column to text
     #     total_arvoice = total_arvoice.rename_column("transcription", "text")
-
+    #     # dump the metadata to json
     #     data_itr = iter(total_arvoice)
     #     with open(os.path.join(arvoice_configs['output_dir'], split, "metadata.json"), "w") as f:
     #         for item in tqdm(data_itr):
     #             if 'audio' in item:
     #                 del item['audio']
-    #             json.dump(item, f, ensure_ascii=False)
+    #             json.dump(item, f, ensure_ascii=False, indent=4)
     #             f.write("\n")
 
-    # #NADI
-    # for split in nadi_configs['splits']:
-    #     process_nadi_fn = partial(process_nadi, split=split)
-    #     nadi = load_dataset("MBZUAI/NADI-2025-Sub-task-3-test", split=split)
-    #     nadi = nadi.map(lambda example, idx: {"id": idx}, with_indices=True, num_proc=nadi_configs['num_proc'])
-    #     nadi = nadi.map(process_nadi_fn, num_proc=nadi_configs['num_proc'])
-
-    #     nadi = nadi.rename_column("transcription", "text")
-
-    #     # dump the metadata to json
-    #     data_itr = iter(nadi)
-    #     with open(os.path.join(nadi_configs['output_dir'], split, "metadata.json"), "w") as f:
-    #         for item in tqdm(data_itr):
-    #             del item['audio']
-    #             json.dump(item, f, ensure_ascii=False)
-    #             f.write("\n")
-
+    #NADI
+    for split in nadi_configs['splits']:
+        process_nadi_fn = partial(process_nadi, split=split)
+        nadi = load_dataset("MBZUAI/NADI-2025-Sub-task-3-test", split=split)
+        nadi = nadi.map(lambda example, idx: {"id": idx}, with_indices=True, num_proc=nadi_configs['num_proc'])
+        nadi = nadi.map(process_nadi_fn, num_proc=nadi_configs['num_proc'])
+        # rename the transcription column to text
+        nadi = nadi.rename_column("transcription", "text")
+        # dump the metadata to json
+        data_itr = iter(nadi)
+        with open(os.path.join(nadi_configs['output_dir'], split, "metadata.json"), "w") as f:
+            for item in tqdm(data_itr):
+                del item['audio']
+                json.dump(item, f, ensure_ascii=False, indent=4)
+                f.write("\n")
+    # nadi = load_dataset("MBZUAI/NADI-2025-Sub-task-3-test", split="test")
+    # nadi = nadi.map(process_nadi, num_proc=4)
+    # nadi.save_to_disk("/home/rufael/Projects/diac-btc/data/nadi/test")
 
 if __name__ == "__main__":
     main()

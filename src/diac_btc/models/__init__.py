@@ -1,0 +1,3 @@
+from diac_model import DiacritizationModel
+from nemo.model import NemoDiacritizationModel
+from wav2vec2.model import Wav2Vec2DiacritizationModel
