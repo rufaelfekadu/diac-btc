@@ -99,13 +99,14 @@ def main(cfg):
     exp_manager(trainer, cfg.get("exp_manager", None))
     char_model = EncDecCTCModel(cfg=cfg.model, trainer=trainer)
 
+
+    # Initialize the weights of the model from another model, if provided via config
+    char_model.maybe_init_from_pretrained_checkpoint(cfg)
+    
     if cfg.model.freeze_encoder:
         char_model.encoder.freeze()
         char_model.encoder.apply(enable_bn_se)
         logging.info("Model encoder has been frozen, and batch normalization has been unfrozen")
-
-    # Initialize the weights of the model from another model, if provided via config
-    char_model.maybe_init_from_pretrained_checkpoint(cfg)
 
     breakpoint()
 

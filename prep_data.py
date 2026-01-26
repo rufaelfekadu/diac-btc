@@ -128,39 +128,39 @@ def process_nadi(item, split):
 def main():
 
     #CLArTTS
-    for split in clartts_configs['splits']:
-        clartts = load_dataset("MBZUAI/clartts", split=split)
-        process_func = partial(process_clartts, split=split)
-        clartts_dataset_processed = clartts.map(process_func, num_proc=16)
+    # for split in clartts_configs['splits']:
+    #     clartts = load_dataset("MBZUAI/clartts", split=split)
+    #     process_func = partial(process_clartts, split=split)
+    #     clartts_dataset_processed = clartts.map(process_func, num_proc=16)
 
-        # dump the metadata to json
-        data_itr = iter(clartts_dataset_processed)
-        with open(os.path.join(clartts_configs['output_dir'], split, "metadata.json"), "w") as f:
-            for item in tqdm(data_itr):
-                del item['audio']
-                json.dump(item, f, ensure_ascii=False)
-                f.write("\n")
-
-    # # ArVoice
-    # for split in arvoice_configs['splits']:
-    #     total_arvoice = []
-    #     prepocess_arvoice_fn = partial(process_arvoice, split=split)
-    #     for csv_file in arvoice_configs['csv_files']:
-    #         arvoice = load_dataset("csv", data_files=csv_file.format(split))["train"]
-    #         arvoice = arvoice.map(lambda x:{"source": x["file_name"].split("/")[-3]}, num_proc=arvoice_configs['num_proc'])
-    #         arvoice = arvoice.map(prepocess_arvoice_fn, num_proc=arvoice_configs['num_proc'])
-    #         total_arvoice.append(arvoice)
-    #     total_arvoice = concatenate_datasets(total_arvoice)
-
-    #     total_arvoice = total_arvoice.rename_column("transcription", "text")
-
-    #     data_itr = iter(total_arvoice)
-    #     with open(os.path.join(arvoice_configs['output_dir'], split, "metadata.json"), "w") as f:
+    #     # dump the metadata to json
+    #     data_itr = iter(clartts_dataset_processed)
+    #     with open(os.path.join(clartts_configs['output_dir'], split, "metadata.json"), "w") as f:
     #         for item in tqdm(data_itr):
-    #             if 'audio' in item:
-    #                 del item['audio']
+    #             del item['audio']
     #             json.dump(item, f, ensure_ascii=False)
     #             f.write("\n")
+
+    # ArVoice
+    for split in arvoice_configs['splits']:
+        total_arvoice = []
+        prepocess_arvoice_fn = partial(process_arvoice, split=split)
+        for csv_file in arvoice_configs['csv_files']:
+            arvoice = load_dataset("csv", data_files=csv_file.format(split))["train"]
+            arvoice = arvoice.map(lambda x:{"source": x["file_name"].split("/")[-3]}, num_proc=arvoice_configs['num_proc'])
+            arvoice = arvoice.map(prepocess_arvoice_fn, num_proc=arvoice_configs['num_proc'], desc=f"Processing {split} ArVoice dataset")
+            total_arvoice.append(arvoice)
+        total_arvoice = concatenate_datasets(total_arvoice)
+
+        total_arvoice = total_arvoice.rename_column("transcription", "text")
+
+        data_itr = iter(total_arvoice)
+        with open(os.path.join(arvoice_configs['output_dir'], split, "metadata.json"), "w") as f:
+            for item in tqdm(data_itr, desc=f"Dumping {split} ArVoice dataset"):
+                if 'audio' in item:
+                    del item['audio']
+                json.dump(item, f, ensure_ascii=False)
+                f.write("\n")
 
     # #NADI
     # for split in nadi_configs['splits']:

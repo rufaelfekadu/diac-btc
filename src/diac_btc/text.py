@@ -32,6 +32,7 @@ VALID_DIACRITICS_COMBINATIONS = [
         DAMMA,
         KASRA,
         SUKUN,
+        SHADDA, # Added because it exists on its own in the dataset, not sure if that's an annotation error or not
         FATHA_SHADDA,
         DAMMA_SHADDA,
         KASRA_SHADDA,
@@ -41,6 +42,16 @@ VALID_DIACRITICS_COMBINATIONS = [
     ]
 ]
 
+MERGED_DIAC_TO_TOKEN_MAP = {
+    FATHA_SHADDA: "\uE001",
+    DAMMA_SHADDA: "\uE002",
+    KASRA_SHADDA: "\uE003",
+    FATHATAN_SHADDA: "\uE004",
+    DAMMATAN_SHADDA: "\uE005",
+    KASRATAN_SHADDA: "\uE006",
+}
+REVERSE_MERGED_DIAC_TO_TOKEN_MAP = {v: k for k, v in MERGED_DIAC_TO_TOKEN_MAP.items()}
+
 INCOMPLETE_COMBINATIONS = [SHADDA]  # -> To be mapped to <UNK_DIAC>
 
 # TODO: Currently includes alef(s) with hamza
@@ -48,6 +59,8 @@ INCOMPLETE_COMBINATIONS = [SHADDA]  # -> To be mapped to <UNK_DIAC>
 ARABIC_CHARACTERS_TO_BE_DIACRITIZED = [
     chr(c) for c in range(ord("\u0621"), ord("\u063a") + 1)
 ] + [chr(c) for c in range(ord("\u0641"), ord("\u064a") + 1)]
+
+
 
 
 def preprocess_text(text):
@@ -114,6 +127,7 @@ def tokenize_text(text, use_special_tokens=False, is_diacritized_dataset=True):
 
 
 def form_wildcard_pattern(text):
+
     characters_with_succeeding_diacritics = get_groups_of_characters_with_diacritics(
         text
     )
