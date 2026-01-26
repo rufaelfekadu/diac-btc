@@ -1,4 +1,4 @@
-from diac_model import DiacritizationModel
+from diac_btc.models import DiacritizationModel
 from nemo.collections.asr.models import ASRModel
 from nemo.collections.common.data.utils import move_data_to_device
 from omegaconf import open_dict

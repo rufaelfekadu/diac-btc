@@ -21,8 +21,29 @@ dependencies = [
     "hydra-core>=1.3.0",
     "tqdm>=4.65.0",
     "numpy>=1.24.0",
-    "nemo-toolkit[all]>=1.23.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "coverage>=6.0.0",
+    "black>=24.0.0",
+    "isort>=5.0.0",
+    "ruff>=0.0.285",
+]
+notebooks = [
+    "jupyter",
+    "matplotlib",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "furo"
+]
+nemo = [
+    "nemo-toolkit[all]>=1.23.0"
+]
+
+
 
 [tool.setuptools]
 package-dir = {"" = "src"}

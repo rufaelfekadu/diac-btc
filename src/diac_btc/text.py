@@ -1,6 +1,6 @@
 import re
 import unicodedata
-from config import WILDCARD_TOKEN, NO_DIAC_TOKEN, UNK_DIAC_TOKEN
+from .config import WILDCARD_TOKEN, NO_DIAC_TOKEN, UNK_DIAC_TOKEN
 
 FATHATAN = "\u064b"
 DAMMATAN = "\u064c"
