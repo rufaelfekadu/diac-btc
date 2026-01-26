@@ -140,3 +140,7 @@ Thumbs.db
 
 
 icefall/
+outputs/
+data/
+**nemo_experiments**
+**.results**
