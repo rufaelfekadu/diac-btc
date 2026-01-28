@@ -3,23 +3,28 @@ import json
 from diac_btc.text import MERGED_DIAC_TO_TOKEN_MAP
 import re
 import os
+from collections import Counter
 
-chars_to_ignore_regex = r'[,\?\.\!\-\;\:\"\“%\‘\”�…{}\【\】・。『』、ー〜]'  # remove special character tokens
+chars_to_ignore_regex = r'[,\?\.\!\-\;\:\"\“%\‘\”�…{}\【\】・。『』、ー〜\ufeff\[\]]'  # remove special character tokens
 
 def build_charset(manifest_paths, extra_chars=None):
-    chars = set()
+    char_counts = Counter()
     for mf in manifest_paths:
         with open(mf, "r", encoding="utf-8") as f:
             for line in f:
                 t = json.loads(line)["text"]
-                chars.update(list(t))
+                char_counts.update(list(t))
+    
     if extra_chars:
-        chars.update(extra_chars)
+        for char in extra_chars:
+            char_counts[char] += 1
 
     # Remove newline/tab just in case
-    chars.discard("\n"); chars.discard("\t")
+    char_counts.pop("\n", None)
+    char_counts.pop("\t", None)
 
-    return sorted(chars)
+    chars = sorted(char_counts.keys())
+    return chars, char_counts
 
 def remove_special_characters(data):
     data["text"] = re.sub(chars_to_ignore_regex, "", data["text"])
@@ -31,7 +36,14 @@ def replace_merged_diacritics(data):
     for k, v in MERGED_DIAC_TO_TOKEN_MAP.items():
         data["text"] = data["text"].replace(k, v)
     return data
-    
+
+def normalize_english_chars(data):
+    data["text"] = data["text"].replace("|", " ")
+    data["text"] = data["text"].replace("-", " ")
+    # convert to lowercase
+    data["text"] = data["text"].lower()
+    return data
+
 def preprocess_manifest(manifest_paths):
     processed_manifest_paths = []
     for mf in manifest_paths:
@@ -41,6 +53,7 @@ def preprocess_manifest(manifest_paths):
                 item = json.loads(line)
                 item = remove_special_characters(item)
                 item = replace_merged_diacritics(item)
+                item = normalize_english_chars(item)
                 f_out.write(json.dumps(item, ensure_ascii=False) + "\n")
             processed_manifest_paths.append(processed_mf)
     return processed_manifest_paths
@@ -48,7 +61,7 @@ def preprocess_manifest(manifest_paths):
 def main(args):
 
     processed_manifest_paths = preprocess_manifest(args.input_paths)
-    chars = build_charset(processed_manifest_paths, args.extra_chars)
+    chars, char_counts = build_charset(processed_manifest_paths, args.extra_chars)
     print(f"Char set: {chars}")
     
     if args.split != "test":
@@ -56,6 +69,14 @@ def main(args):
         with open(char_file_path, "w", encoding="utf-8") as f:
             for c in chars:
                 f.write(c + "\n")
+        
+        # Dump character counts
+        char_counts_path = os.path.join(args.output_path, "charset_counts.txt")
+        # sort and dump the character counts
+        char_counts = sorted(char_counts.items(), key=lambda x: x[1], reverse=True)
+        with open(char_counts_path, "w", encoding="utf-8") as f:
+            for c, count in char_counts:
+                f.write(f"{c}\t{count}\n")
 
     # combine and dump the processed manifest paths to a single file
     combined_manifest_path = os.path.join(args.output_path, f"{args.split}_manifest.json")

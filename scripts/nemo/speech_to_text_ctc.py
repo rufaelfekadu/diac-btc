@@ -98,32 +98,32 @@ def main(cfg):
     trainer = pl.Trainer(**resolve_trainer_cfg(cfg.trainer))
     exp_manager(trainer, cfg.get("exp_manager", None))
 
-    char_model = EncDecCTCModel(cfg=cfg.model, trainer=trainer)
+    # char_model = EncDecCTCModel(cfg=cfg.model, trainer=trainer)
     bpe_model = EncDecCTCModelBPE.restore_from(cfg.init_from_nemo_model, map_location="cpu")
     
     # char_model.change_vocabulary(cfg.model.labels)
 
     # copy the weights of the bpe model to the char model encode
     logging.info(f"Copying weights of the bpe model to the char model encoder")
-    state_dict = bpe_model.encoder.state_dict()
-    try:
-        char_model.encoder.load_state_dict(state_dict, strict=False)
-    except Exception as e:
-        logging.error(f"Error copying weights of the bpe model to the char model encoder: {e}")
-        breakpoint()
+    # state_dict = bpe_model.encoder.state_dict()
+    # try:
+    #     char_model.encoder.load_state_dict(state_dict, strict=False)
+    # except Exception as e:
+    #     logging.error(f"Error copying weights of the bpe model to the char model encoder: {e}")
+    #     breakpoint()
 
     if cfg.freeze_encoder:
-        char_model.encoder.freeze()
-        char_model.encoder.apply(enable_bn_se)
+        bpe_model.encoder.freeze()
+        bpe_model.encoder.apply(enable_bn_se)
         logging.info("Model encoder has been frozen, and batch normalization has been unfrozen")
 
-    logging.info(f"Number of trainable parameters in the char model: {sum(p.numel() for p in char_model.parameters() if p.requires_grad)}")
+    logging.info(f"Number of trainable parameters in the char model: {sum(p.numel() for p in bpe_model.parameters() if p.requires_grad)}")
 
-    trainer.fit(char_model)
+    trainer.fit(bpe_model)
 
     if hasattr(cfg.model, 'test_ds') and cfg.model.test_ds.manifest_filepath is not None:
-        if char_model.prepare_test(trainer):
-            trainer.test(char_model)
+        if bpe_model.prepare_test(trainer):
+            trainer.test(bpe_model)
 
 
 if __name__ == '__main__':

@@ -39,7 +39,8 @@
 # To increase the global batch size with limited number of GPUs, you may use higher accumulate_grad_batches.
 # However accumulate_grad_batches is better to be avoided as long as the global batch size is large enough and training is stable.
 
-name: "FastConformer-CTC-BPE"
+name: "stt_ar_fastconformer_ctc_large_pcd_finetune"
+init_from_nemo_model: outputs/nemo/ckpts/stt_ar_fastconformer_ctc_large_pcd.v1.0.nemo
 
 model:
   sample_rate: 16000
@@ -48,7 +49,7 @@ model:
   skip_nan_grad: false
 
   train_ds:
-    manifest_filepath: ???
+    manifest_filepath: outputs/nemo/train_manifest_temp.json
     sample_rate: ${model.sample_rate}
     batch_size: 16 # you may increase batch_size if your memory allows
     shuffle: true
@@ -65,7 +66,7 @@ model:
     bucketing_batch_size: null
 
   validation_ds:
-    manifest_filepath: ???
+    manifest_filepath: outputs/nemo/val_manifest_temp.json
     sample_rate: ${model.sample_rate}
     batch_size: 16 # you may increase batch_size if your memory allows
     shuffle: false
@@ -74,7 +75,7 @@ model:
     pin_memory: true
 
   test_ds:
-    manifest_filepath: null
+    manifest_filepath: outputs/nemo/test_manifest.json
     sample_rate: ${model.sample_rate}
     batch_size: 16 # you may increase batch_size if your memory allows
     shuffle: false
@@ -85,7 +86,7 @@ model:
   # recommend vocab size of 128 or 256 when training on ~1k hr datasets and 1k vocab size on 10+k hr datasets
   # you may find more detail on how to train a tokenizer at: /scripts/tokenizers/process_asr_text_tokenizer.py
   tokenizer:
-    dir: ???  # path to directory which contains either tokenizer.model (bpe) or vocab.txt (wpe)
+    dir: outputs/nemo/tokenizer_spe_char_v1024  # path to directory which contains either tokenizer.model (bpe) or vocab.txt (wpe)
     type: bpe  # Can be either bpe (SentencePiece tokenizer) or wpe (WordPiece tokenizer)
 
   preprocessor:
@@ -213,7 +214,7 @@ trainer:
   benchmark: false # needs to be false for models with variable-length speech input as it slows down training
 
 exp_manager:
-  exp_dir: null
+  exp_dir: outputs/nemo/experiments
   name: ${name}
   create_tensorboard_logger: true
   create_checkpoint_callback: true

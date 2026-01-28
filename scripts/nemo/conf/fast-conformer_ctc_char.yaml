@@ -6,6 +6,7 @@ name: "Conformer-CTC-Char"
 
 init_from_nemo_model: outputs/nemo/ckpts/stt_ar_fastconformer_ctc_large_pcd.v1.0.nemo
 freeze_encoder: true
+charset_path: outputs/nemo/charset.txt
 
 model:
   sample_rate: 16000
@@ -179,7 +180,7 @@ trainer:
 
 
 exp_manager:
-  exp_dir: null
+  exp_dir: outputs/nemo/conformer_ctc_char
   name: ${name}
   create_tensorboard_logger: true
   create_checkpoint_callback: true
