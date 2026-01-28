@@ -36,6 +36,9 @@ class DiacritizationModel(ABC):
     @property
     def word_delimiter_token(self):
         pass
+    @property
+    def ctc_topo(self):
+        return k2.arc_sort(k2.ctc_topo(len(self.token2id)))
 
     def build_pattern_fsa(self, pattern, constrained=True):
         '''
@@ -80,10 +83,10 @@ class DiacritizationModel(ABC):
         '''
         fsa, _ = self.build_pattern_fsa(pattern, constrained=constrained)
 
-        # log_probs = torch.log_softmax(logits, dim=-1)
-        T, V = logits.shape
-        dense = k2.DenseFsaVec(logits.unsqueeze(0), torch.tensor([[0, 0, T]], dtype=torch.int32))
-        ctc_topo = k2.arc_sort(k2.ctc_topo(V-1))
+        log_probs = torch.log_softmax(logits, dim=-1)
+        T, V = log_probs.shape
+        dense = k2.DenseFsaVec(log_probs.unsqueeze(0), torch.tensor([[0, 0, T]], dtype=torch.int32))
+        ctc_topo = k2.arc_sort(k2.ctc_topo(V))
         decoding_graph = k2.arc_sort(k2.compose(ctc_topo, fsa))
         lattice = k2.intersect_dense_pruned(
             decoding_graph, dense,
@@ -95,10 +98,9 @@ class DiacritizationModel(ABC):
         best_path = k2.shortest_path(lattice, use_double_scores=False)
         aux = k2.get_aux_labels(best_path)[0]
         hyp_ids = [x for x in aux if x >= 0]
+
         if len(hyp_ids) == 0:
-            breakpoint()
-
-
+            return ""
 
         result = "".join(self.id2token[i] for i in hyp_ids)
         
@@ -134,6 +136,21 @@ class DiacritizationModel(ABC):
         if self.word_delimiter_token:
             result = result.replace(self.word_delimiter_token, " ")
             
+        return result
+
+    def decode_ctc_greedy(self, logits):
+        '''
+        Decode CTC greedy.
+        Args:
+            logits: logits from the model
+        Returns:
+            decoded text
+        '''
+        log_probs = torch.log_softmax(logits, dim=-1)
+        greedy_ids = log_probs.argmax(dim=-1)
+        result = "".join(self.id2token[i] for i in greedy_ids)
+        if self.word_delimiter_token:
+            result = result.replace(self.word_delimiter_token, " ")
         return result
 
     @abstractmethod

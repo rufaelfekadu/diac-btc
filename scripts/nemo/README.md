@@ -1,8 +1,12 @@
 # NeMo Fine-tuning
 
-Scripts for fine-tuning NVIDIA NeMo ASR models by converting BPE-based models to character-based CTC models.
-
 ## Workflow
+
+Run the complete steps using
+
+```bash
+bash scripts/nemo/run.sh
+```
 
 ### 1. Prepare Manifests
 

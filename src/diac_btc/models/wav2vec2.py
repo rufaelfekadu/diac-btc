@@ -106,7 +106,6 @@ class Wav2Vec2DiacritizationModel(DiacritizationModel):
         log_probs = self.get_logits(audio)
         pattern = form_wildcard_pattern(text)
 
-        
         if method == "wfst":
             decoded = self.decode_wfst(log_probs, pattern, constrained=constrained)
         elif method == "ctc":
